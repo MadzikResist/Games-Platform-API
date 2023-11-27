@@ -1,8 +1,33 @@
-CREATE DATABASE games_platform
+CREATE DATABASE games_platform;
 CREATE TABLE games (
-    id VARCHAR(255) PRIMARY KEY,
+    id SERIAL PRIMARY KEY NOT NULL,
+    steam_appid INT,
     name VARCHAR(255),
-    description VARCHAR(255)
-
+    detailed_description TEXT ,
+    required_age INT,
+    is_free BOOLEAN,
+    about_the_game TEXT,
+    short_description TEXT,
+    supported_languages TEXT,
+    header_image TEXT,
+    capsule_image TEXT,
+    capsule_imagev5 TEXT,
+    website TEXT,
+    pc_requirements JSONB,
+    mac_requirements JSONB,
+    linux_requirements JSONB,
+    developers JSONB,
+    publishers JSONB,
+    package_groups JSONB,
+    platforms JSONB,
+    categories JSONB,
+    genres JSONB,
+    screenshots JSONB,
+    movies JSONB,
+    release_date JSONB,
+    support_info JSONB,
+    background TEXT,
+    background_raw TEXT,
+    content_descriptors JSONB
 );
 
