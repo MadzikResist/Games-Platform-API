@@ -28,6 +28,7 @@ CREATE TABLE games (
     support_info JSONB,
     background TEXT,
     background_raw TEXT,
-    content_descriptors JSONB
+    content_descriptors JSONB,
+    recommendations JSONB
 );
 
