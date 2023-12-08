@@ -29,5 +29,10 @@ app.post("/game", jsonParser, async (req, res) => {
   }
 });
 
-app.get("/store", async (req, res) => {});
+app.get("/store", async (req, res) => {
+  const storeGamesQuery = await pool.query(
+    `SELECT id, name, publishers, header_image FROM games WHERE name IS NOT NULL ORDER BY NAME DESC LIMIT 100`,
+  );
+  res.json(storeGamesQuery.rows);
+});
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
