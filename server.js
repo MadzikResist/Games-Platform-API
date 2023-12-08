@@ -28,4 +28,6 @@ app.post("/game", jsonParser, async (req, res) => {
     throw new Error("Game not found");
   }
 });
+
+app.get("/store", async (req, res) => {});
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
