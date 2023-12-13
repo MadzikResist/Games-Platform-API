@@ -29,10 +29,23 @@ app.post("/game", jsonParser, async (req, res) => {
   }
 });
 
-app.get("/store", async (req, res) => {
-  const storeGamesQuery = await pool.query(
-    `SELECT id, name, publishers, header_image FROM games WHERE name IS NOT NULL ORDER BY NAME DESC LIMIT 100`,
-  );
-  res.json(storeGamesQuery.rows);
+app.post("/store", jsonParser, async (req, res) => {
+  const { offset = 0, text = "" } = req.body || {};
+  console.log("req.bddy", req.body);
+  let query = `SELECT id, name, publishers, header_image FROM games ORDER BY NAME DESC LIMIT 11 OFFSET ${offset}`;
+  if (text) {
+    query = `SELECT id, name, publishers, header_image FROM games WHERE name ILIKE '%${text}%' ORDER BY NAME DESC LIMIT 11 OFFSET ${offset}`;
+  }
+  const storeGamesQuery = await pool.query(query);
+  let hasNextPage = false;
+  if (storeGamesQuery.rows.length > 10) {
+    hasNextPage = true;
+    storeGamesQuery.rows.pop();
+  }
+  res.json({
+    hasNextPage,
+    offset: offset + storeGamesQuery.rows.length,
+    games: storeGamesQuery.rows,
+  });
 });
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
