@@ -7,15 +7,18 @@ const urlencodedparser = bodyParser.urlencoded({ extended: false });
 const pool = require("./db");
 const fetchGames = require("./getUpdateGames");
 const addGamesToDB = require("./addGamesToDB");
+const getCategories = require("./utils/getCategories");
 const cors = require("cors");
 app.use(cors());
 app.get("/games", async (req, res) => {
   const popularGamesQuery = await pool.query(
-    `SELECT id, name, publishers, header_image, recommendations ->> 'total' AS  total_recommendations FROM games WHERE name IS NOT NULL ORDER BY CAST(recommendations ->> 'total' AS INTEGER) DESC LIMIT 100`,
+    `SELECT id, name, publishers, header_image, recommendations ->> 'total' AS  total_recommendations FROM games WHERE name IS NOT NULL ORDER BY CAST(recommendations ->> 'total' AS INTEGER) DESC LIMIT 10`,
   );
   res.json(popularGamesQuery.rows);
 });
 // addGamesToDB()
+// getCategories();
+
 app.post("/game", jsonParser, async (req, res) => {
   console.log("req", req.body.id);
   const gameOneQuery = `SELECT * FROM games WHERE id = ($1)`;
@@ -31,12 +34,23 @@ app.post("/game", jsonParser, async (req, res) => {
 
 app.post("/store", jsonParser, async (req, res) => {
   const { offset = 0, text = "" } = req.body || {};
-  console.log("req.bddy", req.body);
-  let query = `SELECT id, name, publishers, header_image FROM games ORDER BY NAME DESC LIMIT 11 OFFSET ${offset}`;
+  let query = `SELECT id, name, publishers, header_image FROM games ORDER BY
+  CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+  END,
+  name ASC LIMIT 11 OFFSET $1`;
   if (text) {
-    query = `SELECT id, name, publishers, header_image FROM games WHERE name ILIKE '%${text}%' ORDER BY NAME DESC LIMIT 11 OFFSET ${offset}`;
+    query = `SELECT id, name, publishers, header_image FROM games WHERE name ILIKE $1  ORDER BY CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+  END,
+  name ASC LIMIT 11 OFFSET $2`;
   }
-  const storeGamesQuery = await pool.query(query);
+  const storeGamesQuery = await pool.query(
+    query,
+    text ? [`%${text}%`, offset] : [offset],
+  );
   let hasNextPage = false;
   if (storeGamesQuery.rows.length > 10) {
     hasNextPage = true;
@@ -48,4 +62,5 @@ app.post("/store", jsonParser, async (req, res) => {
     games: storeGamesQuery.rows,
   });
 });
+
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
