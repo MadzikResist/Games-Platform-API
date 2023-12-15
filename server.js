@@ -33,8 +33,16 @@ app.post("/game", jsonParser, async (req, res) => {
 });
 
 app.post("/store", jsonParser, async (req, res) => {
-  const { offset = 0, text = "" } = req.body || {};
-  let query = `SELECT id, name, publishers, header_image FROM games ORDER BY
+  const { offset = 0, text = "", option = "", filter = "" } = req.body || {};
+  let queryFilter;
+  if (filter === "genres" && option !== "Any") {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(genres) AS genre WHERE genre ->> 'description' ILIKE '%${option}%' AND genres IS NOT NULL`;
+  } else if (filter === "categories" && option !== "Any") {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(categories) AS category WHERE category ->> 'description' ILIKE '%${option}%' AND categories IS NOT NULL`;
+  } else {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games`;
+  }
+  let query = `${queryFilter} ORDER BY
   CASE
     WHEN name ~ '^[a-zA-Z]' THEN 1
     ELSE 2

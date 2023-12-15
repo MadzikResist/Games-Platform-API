@@ -15,13 +15,13 @@ const pool = require("../db");
 
 const getCategories = async () => {
   const cat = await pool.query(
-    `SELECT categories FROM games WHERE categories IS NOT NULL`,
+    `SELECT genres FROM games WHERE genres IS NOT NULL`,
   );
   const categoriesData = cat?.rows || [];
 
   const uniqueCategoriesSet = new Set(
     categoriesData.flatMap((data) =>
-      data?.categories.map((sec) => sec?.description),
+      data?.genres.map((sec) => sec?.description),
     ),
   );
   const uniqueCategoriesArray = Array.from(uniqueCategoriesSet);
