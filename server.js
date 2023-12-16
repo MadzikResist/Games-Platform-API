@@ -33,8 +33,15 @@ app.post("/game", jsonParser, async (req, res) => {
 });
 
 app.post("/store", jsonParser, async (req, res) => {
-  const { offset = 0, text = "", option = "", filter = "" } = req.body || {};
+  const {
+    offset = 0,
+    text = "",
+    option = "Recommendations",
+    filter = "",
+  } = req.body || {};
   let queryFilter;
+  console.log(option, "option");
+
   if (filter === "genres" && option !== "Any") {
     queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(genres) AS genre WHERE genre ->> 'description' ILIKE '%${option}%' AND genres IS NOT NULL`;
   } else if (filter === "categories" && option !== "Any") {
@@ -54,6 +61,19 @@ app.post("/store", jsonParser, async (req, res) => {
     ELSE 2
   END,
   name ASC LIMIT 11 OFFSET $2`;
+  } else if (option === "Recommendations") {
+    query = `SELECT id, name, publishers, header_image FROM games ORDER BY recommendations DESC LIMIT 11 OFFSET $1`;
+  } else if (option === "Title A-Z") {
+    query = `SELECT id, name, publishers, header_image FROM games ORDER BY CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+  END,
+  name ASC LIMIT 11 OFFSET $1`;
+  } else if (option === "Title Z-A") {
+    query = `SELECT id, name, publishers, header_image FROM games ORDER BY CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+  END,name DESC LIMIT 11 OFFSET $1`;
   }
   const storeGamesQuery = await pool.query(
     query,
