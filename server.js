@@ -32,58 +32,111 @@ app.post("/game", jsonParser, async (req, res) => {
   }
 });
 
+
 app.post("/store", jsonParser, async (req, res) => {
   const {
     offset = 0,
     text = "",
-    option = "Recommendations",
+    option = "",
     filter = "",
+    sortBy = "Recommendations",
   } = req.body || {};
   let queryFilter;
   console.log(option, "option");
-
-  if (filter === "genres" && option !== "Any") {
-    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(genres) AS genre WHERE genre ->> 'description' ILIKE '%${option}%' AND genres IS NOT NULL`;
-  } else if (filter === "categories" && option !== "Any") {
-    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(categories) AS category WHERE category ->> 'description' ILIKE '%${option}%' AND categories IS NOT NULL`;
-  } else {
-    queryFilter = `SELECT id, name, publishers, header_image FROM games`;
-  }
-  let query = `${queryFilter} ORDER BY
-  CASE
+  console.log("sortBy", sortBy);
+  console.log("filter", filter);
+  if (filter === "genres" && option !== "Any" && sortBy === "Recommendations") {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(genres) AS genre WHERE genre ->> 'description' ILIKE $1 AND genres IS NOT NULL
+    ORDER BY recommendations DESC LIMIT 11 OFFSET $2`;
+  } else if (
+    filter === "genres" &&
+    option !== "Any" &&
+    sortBy === "Title A-Z"
+  ) {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(genres) AS genre WHERE genre ->> 'description' ILIKE $1 AND genres IS NOT NULL
+    ORDER BY
+    CASE
     WHEN name ~ '^[a-zA-Z]' THEN 1
     ELSE 2
-  END,
-  name ASC LIMIT 11 OFFSET $1`;
+    END,
+    name LIMIT 11 OFFSET $2`;
+  } else if (
+    filter === "genres" &&
+    option !== "Any" &&
+    sortBy === "Title Z-A"
+  ) {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(genres) AS genre WHERE genre ->> 'description' ILIKE $1 AND genres IS NOT NULL
+    ORDER BY
+    CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+    END,
+    name DESC LIMIT 11 OFFSET $2`;
+  } else if (
+    filter === "categories" &&
+    option !== "Any" &&
+    sortBy === "Recommendations"
+  ) {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(categories) AS category WHERE category ->> 'description' ILIKE  $1 AND categories IS NOT NULL
+    ORDER BY recommendations DESC LIMIT 11 OFFSET $2`;
+  } else if (
+    filter === "categories" &&
+    option !== "Any" &&
+    sortBy === "Title A-Z"
+  ) {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(categories) AS category WHERE category ->> 'description' ILIKE $1 AND categories IS NOT NULL
+    ORDER BY
+    CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+    END,
+    name LIMIT 11 OFFSET $2`;
+  } else if (
+    filter === "categories" &&
+    option !== "Any" &&
+    sortBy === "Title Z-A"
+  ) {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games, LATERAL unnest(categories) AS category WHERE category ->> 'description' ILIKE $1 AND categories IS NOT NULL
+    ORDER BY
+    CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+    END,
+    name DESC LIMIT 11 OFFSET $2`;
+  } else if (filter === "" && option === "" && sortBy === "Title A-Z"){
+    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY 
+    CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+    END,
+    name LIMIT 11 OFFSET $1`;
+  } else if (filter === "" && option === "" && sortBy === "Title Z-A"){
+    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY 
+    CASE
+    WHEN name ~ '^[a-zA-Z]' THEN 1
+    ELSE 2
+    END,
+    name DESC LIMIT 11 OFFSET $1`;
+  }
+
+  else {
+    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY recommendations DESC LIMIT 11 OFFSET $1`;
+  }
+
   if (text) {
-    query = `SELECT id, name, publishers, header_image FROM games WHERE name ILIKE $1  ORDER BY CASE
+    queryFilter = `SELECT id, name, publishers, header_image FROM games WHERE name ILIKE $1 ORDER BY CASE
     WHEN name ~ '^[a-zA-Z]' THEN 1
     ELSE 2
   END,
   name ASC LIMIT 11 OFFSET $2`;
-  } else if (option === "Recommendations") {
-    query = `SELECT id, name, publishers, header_image FROM games ORDER BY recommendations DESC LIMIT 11 OFFSET $1`;
-  } else if (option === "Title A-Z") {
-    query = `SELECT id, name, publishers, header_image FROM games ORDER BY CASE
-    WHEN name ~ '^[a-zA-Z]' THEN 1
-    ELSE 2
-  END,
-  name ASC LIMIT 11 OFFSET $1`;
-  } else if (option === "Title Z-A") {
-    query = `SELECT id, name, publishers, header_image FROM games ORDER BY CASE
-    WHEN name ~ '^[a-zA-Z]' THEN 1
-    ELSE 2
-  END,name DESC LIMIT 11 OFFSET $1`;
   }
-  const storeGamesQuery = await pool.query(
-    query,
-    text ? [`%${text}%`, offset] : [offset],
-  );
+  const storeGamesQuery = await pool.query(queryFilter, text ? [`%${text}%`,offset] : option ? [option, offset] : [offset]);
   let hasNextPage = false;
   if (storeGamesQuery.rows.length > 10) {
     hasNextPage = true;
     storeGamesQuery.rows.pop();
   }
+
   res.json({
     hasNextPage,
     offset: offset + storeGamesQuery.rows.length,
