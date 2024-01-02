@@ -10,6 +10,16 @@ const addGamesToDB = require("./addGamesToDB");
 const getCategories = require("./utils/getCategories");
 const cors = require("cors");
 app.use(cors());
+// const {Sequelize} = require("sequelize")
+//
+// const sequelize = new Sequelize(process.env.DATABASE_URL,{
+//   dialect: "sqlite",
+//   storage: "./database.sqlite",
+//   logging: false
+// })
+
+
+
 app.get("/games", async (req, res) => {
   const popularGamesQuery = await pool.query(
     `SELECT id, name, publishers, header_image, recommendations ->> 'total' AS  total_recommendations FROM games WHERE name IS NOT NULL ORDER BY CAST(recommendations ->> 'total' AS INTEGER) DESC LIMIT 10`,
@@ -104,14 +114,14 @@ app.post("/store", jsonParser, async (req, res) => {
     END,
     name DESC LIMIT 11 OFFSET $2`;
   } else if (filter === "" && option === "" && sortBy === "Title A-Z"){
-    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY 
+    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY
     CASE
     WHEN name ~ '^[a-zA-Z]' THEN 1
     ELSE 2
     END,
     name LIMIT 11 OFFSET $1`;
   } else if (filter === "" && option === "" && sortBy === "Title Z-A"){
-    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY 
+    queryFilter = `SELECT id, name, publishers, header_image FROM games ORDER BY
     CASE
     WHEN name ~ '^[a-zA-Z]' THEN 1
     ELSE 2
