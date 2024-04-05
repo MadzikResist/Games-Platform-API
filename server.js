@@ -9,6 +9,7 @@ const fetchGames = require("./getUpdateGames");
 const addGamesToDB = require("./addGamesToDB");
 const getCategories = require("./utils/getCategories");
 const cors = require("cors");
+const cronFunctions = require("./utils/crons");
 app.use(cors());
 // const {Sequelize} = require("sequelize")
 //
@@ -154,4 +155,5 @@ app.post("/store", jsonParser, async (req, res) => {
   });
 });
 
+cronFunctions()
 app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));

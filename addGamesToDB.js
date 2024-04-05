@@ -41,8 +41,6 @@ const addGamesToDB = async () => {
 
           // console.log(Object.keys(oneGameList[listGamesFor.appid].data));
         }
-
-
       }
       console.log('timeout', i);
       if( i % 200 === 0 && i){
